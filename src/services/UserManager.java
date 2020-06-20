@@ -13,11 +13,12 @@ public class UserManager implements IUserManager{
 
     private static final String INSERT_USER_SQL = "insert into users" + "(name, email, country) VALUE" + "(?,?,?);";
 
-    private static final String SELECT_USER_BY_ID = "select id,name,email,country from users where id =?";
+    private static final String SELECT_USER_BY_ID = "select id,name,email,country from users where id = ?";
     private static final String SELECT_ALL_USERS = "select * from users";
     private static final String DELETE_USERS_SQL = "delete from users where id = ?;";
     private static final String UPDATE_USERS_SQL = "update users set name = ?,email= ?, country =? where id = ?;";
-
+    private static final String FIND_USER_BY_COUNTRY = "select * from users where country = ?;";
+    private static final String SORT_USER_BY_NAME = "select * from users order by name asc";
     public UserManager() {
     }
 
@@ -35,8 +36,7 @@ public class UserManager implements IUserManager{
     @Override
     public void insertUser(User user) throws SQLException {
         System.out.println(INSERT_USER_SQL);
-        try ( Connection connection = getConnection();
-              PreparedStatement preparedStatement = connection.prepareStatement(INSERT_USER_SQL)) {
+        try ( Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(INSERT_USER_SQL)) {
             preparedStatement.setString(1, user.getName());
             preparedStatement.setString(2, user.getEmail());
             preparedStatement.setString(3, user.getCountry());
@@ -88,25 +88,7 @@ public class UserManager implements IUserManager{
 
     @Override
     public List<User> selectAllUsers() {
-        List<User> users = new ArrayList<>();
-
-        try (Connection connection = getConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_USERS);) {
-            System.out.println(preparedStatement);
-            ResultSet resultSet = preparedStatement.executeQuery();
-
-            while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String name = resultSet.getString("name");
-                String email = resultSet.getString("email");
-                String country = resultSet. getString("country");
-
-                users.add(new User(id, name, email, country));
-            }
-        } catch (SQLException e) {
-            printSQLException(e);
-        }
-        return users;
+        return getUserList(SELECT_ALL_USERS);
     }
 
     @Override
@@ -131,5 +113,53 @@ public class UserManager implements IUserManager{
             rowUpdated = statement.executeUpdate() > 0;
         }
         return rowUpdated;
+    }
+
+    @Override
+    public List<User> findUser(String country) {
+        List<User> users = new ArrayList<>();
+
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(FIND_USER_BY_COUNTRY);) {
+            preparedStatement.setString(1, country);
+            System.out.println(preparedStatement);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                String email = resultSet.getString("email");
+
+                users.add(new User(id, name, email, country));
+            }
+        } catch (SQLException e) {
+            printSQLException(e);
+        }
+        return users;
+    }
+
+    @Override
+    public List<User> sortUserByName() {
+        return getUserList(SORT_USER_BY_NAME);
+    }
+
+    private List<User> getUserList(String sqlCode) {
+        List<User> users = new ArrayList<>();
+
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(sqlCode);) {
+            System.out.println(preparedStatement);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                String email = resultSet.getString("email");
+                String country = resultSet. getString("country");
+
+                users.add(new User(id, name, email, country));
+            }
+        } catch (SQLException e) {
+            printSQLException(e);
+        }
+        return users;
     }
 }
