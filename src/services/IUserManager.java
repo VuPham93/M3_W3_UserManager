@@ -29,4 +29,11 @@ public interface IUserManager {
     public void insertUpdateWithoutTransaction();
 
     public void insertUpdateUseTransaction();
+
+    public List<User> selectAllUserStoreProcedure();
+
+    public boolean updateUserStoreProcedure(User user) throws SQLException;
+
+    public boolean deleteUserStoreProcedure(int id) throws SQLException;
+
 }

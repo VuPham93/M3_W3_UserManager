@@ -99,7 +99,8 @@ public class UserServlet extends HttpServlet {
     }
 
     private void listUser(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        List<User> listUser = userManager.selectAllUsers();
+//        List<User> listUser = userManager.selectAllUsers();
+        List<User> listUser = userManager.selectAllUserStoreProcedure();
         request.setAttribute("listUser", listUser);
         RequestDispatcher dispatcher = request.getRequestDispatcher("user/list.jsp");
         dispatcher.forward(request, response);
@@ -138,14 +139,16 @@ public class UserServlet extends HttpServlet {
         String country = request.getParameter("country");
 
         User book = new User(id, name, email, country);
-        userManager.updateUser(book);
+//        userManager.updateUser(book);
+        userManager.updateUserStoreProcedure(book);
         RequestDispatcher dispatcher = request.getRequestDispatcher("user/edit.jsp");
         dispatcher.forward(request, response);
     }
 
     private void deleteUser(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException, ServletException {
         int id = Integer.parseInt(request.getParameter("id"));
-        userManager.deleteUser(id);
+//        userManager.deleteUser(id);
+        userManager.deleteUserStoreProcedure(id);
 
         List<User> listUser = userManager.selectAllUsers();
         request.setAttribute("listUser", listUser);

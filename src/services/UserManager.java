@@ -63,22 +63,6 @@ public class UserManager implements IUserManager{
         }
     }
 
-    private void printSQLException(SQLException ex) {
-        for (Throwable e : ex) {
-            if (e instanceof SQLException) {
-                e.printStackTrace(System.err);
-                System.err.println("SQLState: " + ((SQLException) e).getSQLState());
-                System.err.println("Error Code: " + ((SQLException) e).getErrorCode());
-                System.err.println("Message: " + e.getMessage());
-                Throwable t = ex.getCause();
-                while (t != null) {
-                    System.out.println("Cause: " + t);
-                    t = t.getCause();
-                }
-            }
-        }
-    }
-
     @Override
     public User selectUser(int id) {
         User user = null;
@@ -102,30 +86,25 @@ public class UserManager implements IUserManager{
     }
 
     @Override
-    public User getUserById(int id) {
-        User user = null;
-        String query = "{call get_user_by_id(?)}";
+    public List<User> selectAllUsers() {
+        List<User> users = new ArrayList<>();
 
-        try (Connection connection = getConnection(); CallableStatement callableStatement = connection.prepareCall(query);) {
-            callableStatement.setInt(1, id);
-            ResultSet resultSet = callableStatement.executeQuery();
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_USERS);) {
+            System.out.println(preparedStatement);
+            ResultSet resultSet = preparedStatement.executeQuery();
 
             while (resultSet.next()) {
+                int id = resultSet.getInt("id");
                 String name = resultSet.getString("name");
                 String email = resultSet.getString("email");
-                String country = resultSet.getString("country");
+                String country = resultSet. getString("country");
 
-                user = new User(id, name, email, country);
+                users.add(new User(id, name, email, country));
             }
         } catch (SQLException e) {
             printSQLException(e);
         }
-        return user;
-    }
-
-    @Override
-    public List<User> selectAllUsers() {
-        return getUserList(SELECT_ALL_USERS);
+        return users;
     }
 
     @Override
@@ -176,7 +155,46 @@ public class UserManager implements IUserManager{
 
     @Override
     public List<User> sortUserByName() {
-        return getUserList(SORT_USER_BY_NAME);
+        List<User> users = new ArrayList<>();
+
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(SORT_USER_BY_NAME);) {
+            System.out.println(preparedStatement);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                String email = resultSet.getString("email");
+                String country = resultSet. getString("country");
+
+                users.add(new User(id, name, email, country));
+            }
+        } catch (SQLException e) {
+            printSQLException(e);
+        }
+        return users;
+    }
+
+    @Override
+    public User getUserById(int id) {
+        User user = null;
+        String query = "{call get_user_by_id(?)}";
+
+        try (Connection connection = getConnection(); CallableStatement callableStatement = connection.prepareCall(query);) {
+            callableStatement.setInt(1, id);
+            ResultSet resultSet = callableStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String name = resultSet.getString("name");
+                String email = resultSet.getString("email");
+                String country = resultSet.getString("country");
+
+                user = new User(id, name, email, country);
+            }
+        } catch (SQLException e) {
+            printSQLException(e);
+        }
+        return user;
     }
 
     @Override
@@ -193,27 +211,6 @@ public class UserManager implements IUserManager{
         } catch (SQLException e) {
             printSQLException(e);
         }
-    }
-
-    private List<User> getUserList(String sqlCode) {
-        List<User> users = new ArrayList<>();
-
-        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(sqlCode);) {
-            System.out.println(preparedStatement);
-            ResultSet resultSet = preparedStatement.executeQuery();
-
-            while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String name = resultSet.getString("name");
-                String email = resultSet.getString("email");
-                String country = resultSet. getString("country");
-
-                users.add(new User(id, name, email, country));
-            }
-        } catch (SQLException e) {
-            printSQLException(e);
-        }
-        return users;
     }
 
     @Override
@@ -336,6 +333,73 @@ public class UserManager implements IUserManager{
             connection.setAutoCommit(true);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<User> selectAllUserStoreProcedure() {
+        List<User> users = new ArrayList<>();
+        String query = "{call select_all_user()}";
+
+        try (Connection connection = getConnection(); CallableStatement callableStatement = connection.prepareCall(query)) {
+            ResultSet resultSet = callableStatement.executeQuery();
+
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                String email = resultSet.getString("email");
+                String country = resultSet. getString("country");
+
+                users.add(new User(id, name, email, country));
+            }
+        } catch (SQLException e) {
+            printSQLException(e);
+        }
+        return users;
+    }
+
+    @Override
+    public boolean updateUserStoreProcedure(User user) throws SQLException {
+        boolean rowUpdated = false;
+        String query = "{call update_user(?,?,?,?)}";
+
+        try (Connection connection = getConnection(); CallableStatement callableStatement = connection.prepareCall(query)) {
+            callableStatement.setString(1, user.getName());
+            callableStatement.setString(2, user.getEmail());
+            callableStatement.setString(3, user.getCountry());
+            callableStatement.setInt(4, user.getId());
+
+            rowUpdated = callableStatement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            printSQLException(e);
+        }
+        return rowUpdated;
+    }
+
+    @Override
+    public boolean deleteUserStoreProcedure(int id) throws SQLException {
+        boolean rowDeleted;
+        String query = "{call delete_user(?)}";
+        try (Connection connection = getConnection(); CallableStatement statement = connection.prepareCall(query)) {
+            statement.setInt(1, id);
+            rowDeleted = statement.executeUpdate() > 0;
+        }
+        return rowDeleted;
+    }
+
+    private void printSQLException(SQLException ex) {
+        for (Throwable e : ex) {
+            if (e instanceof SQLException) {
+                e.printStackTrace(System.err);
+                System.err.println("SQLState: " + ((SQLException) e).getSQLState());
+                System.err.println("Error Code: " + ((SQLException) e).getErrorCode());
+                System.err.println("Message: " + e.getMessage());
+                Throwable t = ex.getCause();
+                while (t != null) {
+                    System.out.println("Cause: " + t);
+                    t = t.getCause();
+                }
+            }
         }
     }
 }
