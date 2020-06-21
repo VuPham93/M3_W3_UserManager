@@ -25,6 +25,12 @@
     </h2>
 </center>
 
+<center>
+    <h2>
+        <a href="users?action=permission">Add User permission</a>
+    </h2>
+</center>
+
 <div align="center">
     <table border="1" cellpadding="5">
         <caption><h2>List of Users</h2></caption>

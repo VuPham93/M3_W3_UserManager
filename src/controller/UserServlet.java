@@ -65,6 +65,9 @@ public class UserServlet extends HttpServlet {
                 case "sort":
                     sortUserByName(request, response);
                     break;
+                case "permission":
+                    addUserPermission(request, response);
+                    break;
                 default:
                     listUser(request, response);
                     break;
@@ -141,6 +144,15 @@ public class UserServlet extends HttpServlet {
         List<User> listUser = userManager.selectAllUsers();
         request.setAttribute("listUser", listUser);
         RequestDispatcher dispatcher = request.getRequestDispatcher("user/list.jsp");
+        dispatcher.forward(request, response);
+    }
+
+    private void addUserPermission(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        User user = new User("Vu", "vu@gmail.com", "Viet Nam");
+        int[] permission = {1, 2, 4};
+        userManager.addUserTransaction(user, permission);
+
+        RequestDispatcher dispatcher = request.getRequestDispatcher("user/find.jsp");
         dispatcher.forward(request, response);
     }
 }

@@ -67,7 +67,7 @@ public class UserManager implements IUserManager{
     @Override
     public User selectUser(int id) {
         User user = null;
-       try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(SELECT_USER_BY_ID);) {
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(SELECT_USER_BY_ID);) {
             preparedStatement.setInt(1, id);
             System.out.println(preparedStatement);
 
@@ -82,6 +82,28 @@ public class UserManager implements IUserManager{
            }
         } catch (SQLException e) {
            printSQLException(e);
+        }
+        return user;
+    }
+
+    @Override
+    public User getUserById(int id) {
+        User user = null;
+        String query = "{call get_user_by_id(?)}";
+
+        try (Connection connection = getConnection(); CallableStatement callableStatement = connection.prepareCall(query);) {
+            callableStatement.setInt(1, id);
+            ResultSet resultSet = callableStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String name = resultSet.getString("name");
+                String email = resultSet.getString("email");
+                String country = resultSet.getString("country");
+
+                user = new User(id, name, email, country);
+            }
+        } catch (SQLException e) {
+            printSQLException(e);
         }
         return user;
     }
@@ -143,28 +165,6 @@ public class UserManager implements IUserManager{
     }
 
     @Override
-    public User getUserById(int id) {
-        User user = null;
-        String query = "{call get_user_by_id(?)}";
-
-        try (Connection connection = getConnection(); CallableStatement callableStatement = connection.prepareCall(query);) {
-            callableStatement.setInt(1, id);
-            ResultSet resultSet = callableStatement.executeQuery();
-
-            while (resultSet.next()) {
-                String name = resultSet.getString("name");
-                String email = resultSet.getString("email");
-                String country = resultSet.getString("country");
-
-                user = new User(id, name, email, country);
-            }
-        } catch (SQLException e) {
-            printSQLException(e);
-        }
-        return user;
-    }
-
-    @Override
     public void insertUserStore(User user) throws SQLException {
         String query = "{call insert_user(?,?,?)}";
 
@@ -177,6 +177,66 @@ public class UserManager implements IUserManager{
             callableStatement.executeQuery();
         } catch (SQLException e) {
             printSQLException(e);
+        }
+    }
+
+    @Override
+    public void addUserTransaction(User user, int[] permissions) {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        PreparedStatement preparedStatementAssigment = null;
+        ResultSet resultSet = null;
+
+        try {
+            connection = getConnection();
+            connection.setAutoCommit(false);
+
+            preparedStatement = connection.prepareStatement(INSERT_USER_SQL, Statement.RETURN_GENERATED_KEYS);
+            preparedStatement.setString(1, user.getName());
+            preparedStatement.setString(2, user.getEmail());
+            preparedStatement.setString(3, user.getCountry());
+
+            int rowAffected = preparedStatement.executeUpdate();
+
+            resultSet = preparedStatement.getGeneratedKeys();
+
+            int userId = 0;
+
+            if (resultSet.next()) {
+                userId = resultSet.getInt(1);
+            }
+
+            if (rowAffected == 1) {
+                String sqlPivot = "insert into user_permission(user_id,permission_id) value(?,?)";
+                preparedStatementAssigment = connection.prepareStatement(sqlPivot);
+
+                for (int permissionId: permissions) {
+                    preparedStatementAssigment.setInt(1, userId);
+                    preparedStatementAssigment.setInt(2, permissionId);
+                    preparedStatementAssigment.executeUpdate();
+                }
+
+                connection.commit();
+            } else {
+                connection.rollback();
+            }
+        } catch (SQLException e) {
+            try {
+                if (connection != null)
+                    connection.rollback();
+            } catch (SQLException exception) {
+                System.out.println(exception.getMessage());
+            }
+            System.out.println(e.getMessage());
+        } finally {
+            try {
+                if (resultSet != null) resultSet.close();
+                if (preparedStatement != null) preparedStatement.close();
+                if (preparedStatementAssigment != null) preparedStatementAssigment.close();
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());;
+            }
         }
     }
 
