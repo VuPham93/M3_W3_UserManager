@@ -27,4 +27,6 @@ public interface IUserManager {
     public void addUserTransaction(User user, int[] permission);
 
     public void insertUpdateWithoutTransaction();
+
+    public void insertUpdateUseTransaction();
 }

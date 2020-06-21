@@ -37,6 +37,12 @@
     </h2>
 </center>
 
+<center>
+    <h2>
+        <a href="users?action=test-use-tran">Insert Update With Transaction</a>
+    </h2>
+</center>
+
 <div align="center">
     <table border="1" cellpadding="5">
         <caption><h2>List of Users</h2></caption>

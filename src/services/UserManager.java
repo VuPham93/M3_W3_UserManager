@@ -304,4 +304,38 @@ public class UserManager implements IUserManager{
             e.printStackTrace();
         }
     }
+
+    @Override
+    public void insertUpdateUseTransaction() {
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement();
+             PreparedStatement preparedStatementInsert = connection.prepareStatement(SQL_INSERT);
+             PreparedStatement preparedStatementUpdate = connection.prepareStatement(SQL_UPDATE)) {
+
+            statement.execute(SQL_TABLE_DROP);
+            statement.execute(SQL_CREATE_TABLE);
+
+            connection.setAutoCommit(false);
+
+            preparedStatementInsert.setString(1, "Quynh");
+            preparedStatementInsert.setBigDecimal(2, new BigDecimal(10));
+            preparedStatementInsert.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            preparedStatementInsert.execute();
+
+
+            preparedStatementInsert.setString(1, "Ngan");
+            preparedStatementInsert.setBigDecimal(2, new BigDecimal(20));
+            preparedStatementInsert.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            preparedStatementInsert.execute();
+
+            preparedStatementUpdate.setBigDecimal(1, new BigDecimal(999.99));
+            preparedStatementUpdate.setString(2, "Quynh");
+            preparedStatementUpdate.execute();
+
+            connection.commit();
+            connection.setAutoCommit(true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
