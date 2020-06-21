@@ -2,7 +2,9 @@ package services;
 
 import model.User;
 
+import java.math.BigDecimal;
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,9 +18,22 @@ public class UserManager implements IUserManager{
     private static final String SELECT_USER_BY_ID = "select id,name,email,country from users where id = ?";
     private static final String SELECT_ALL_USERS = "select * from users";
     private static final String DELETE_USERS_SQL = "delete from users where id = ?;";
-    private static final String UPDATE_USERS_SQL = "update users set name = ?,email= ?, country =? where id = ?;";
+    private static final String UPDATE_USERS_SQL = "update users set name = ?,email = ?, country = ? where id = ?;";
     private static final String FIND_USER_BY_COUNTRY = "select * from users where country = ?;";
     private static final String SORT_USER_BY_NAME = "select * from users order by name asc";
+    private static final String SQL_INSERT = "insert into employee(name, salary, created_date) values (?,?,?)";
+    private static final String SQL_UPDATE = "update employee set salary = ? where name = ?";
+    private static final String SQL_CREATE_TABLE = "create table employee "
+            + "("
+            + "id serial,"
+            + "name varchar(100) not null,"
+            + "salary numeric(15, 2) not null,"
+            + "created_date timestamp,"
+            + "primary key (id)"
+            + ")";
+
+    private static final String SQL_TABLE_DROP = "drop table if exists employee";
+
     public UserManager() {
     }
 
@@ -180,6 +195,27 @@ public class UserManager implements IUserManager{
         }
     }
 
+    private List<User> getUserList(String sqlCode) {
+        List<User> users = new ArrayList<>();
+
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(sqlCode);) {
+            System.out.println(preparedStatement);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                String email = resultSet.getString("email");
+                String country = resultSet. getString("country");
+
+                users.add(new User(id, name, email, country));
+            }
+        } catch (SQLException e) {
+            printSQLException(e);
+        }
+        return users;
+    }
+
     @Override
     public void addUserTransaction(User user, int[] permissions) {
         Connection connection = null;
@@ -240,24 +276,32 @@ public class UserManager implements IUserManager{
         }
     }
 
-    private List<User> getUserList(String sqlCode) {
-        List<User> users = new ArrayList<>();
+    @Override
+    public void insertUpdateWithoutTransaction() {
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement();
+             PreparedStatement preparedStatementInsert = connection.prepareStatement(SQL_INSERT);
+             PreparedStatement preparedStatementUpdate = connection.prepareStatement(SQL_UPDATE)) {
 
-        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(sqlCode);) {
-            System.out.println(preparedStatement);
-            ResultSet resultSet = preparedStatement.executeQuery();
+            statement.execute(SQL_TABLE_DROP);
+            statement.execute(SQL_CREATE_TABLE);
 
-            while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String name = resultSet.getString("name");
-                String email = resultSet.getString("email");
-                String country = resultSet. getString("country");
+            preparedStatementInsert.setString(1, "Quynh");
+            preparedStatementInsert.setBigDecimal(2, new BigDecimal(10));
+            preparedStatementInsert.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            preparedStatementInsert.execute();
 
-                users.add(new User(id, name, email, country));
-            }
-        } catch (SQLException e) {
-            printSQLException(e);
+
+            preparedStatementInsert.setString(1, "Ngan");
+            preparedStatementInsert.setBigDecimal(2, new BigDecimal(20));
+            preparedStatementInsert.setTimestamp(3, Timestamp.valueOf(LocalDateTime.now()));
+            preparedStatementInsert.execute();
+
+            preparedStatementUpdate.setBigDecimal(2, new BigDecimal(999.99));
+            preparedStatementUpdate.setString(2, "Quynh");
+            preparedStatementUpdate.execute();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        return users;
     }
 }
