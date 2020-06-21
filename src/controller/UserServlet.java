@@ -152,7 +152,6 @@ public class UserServlet extends HttpServlet {
         int[] permission = {1, 2, 4};
         userManager.addUserTransaction(user, permission);
 
-        RequestDispatcher dispatcher = request.getRequestDispatcher("user/find.jsp");
-        dispatcher.forward(request, response);
+        listUser(request, response);
     }
 }
